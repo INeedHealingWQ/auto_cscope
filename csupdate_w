@@ -1,0 +1,104 @@
+#!/bin/bash
+
+# Toolname: cscope, Arg: -bkq -i, CS index filename: cscope.files
+CS_TOOL_NAME=cscope
+CS_ARG="-bkq -i"
+CS_FILE_NAME="cscope.files"
+
+# Basic constant.
+SRC_BASE_PATH="$HOME"
+CS_BASE_PATH="$HOME/csdatabase"
+
+# For cscope database quick-build.
+QUICK_FLAG=0
+
+if [ ! -d $SRC_BASE_PATH ] || [ ! -d $CS_BASE_PATH ]
+then
+    echo "$SRC_BASE_PATH or $CS_BASE_PATH not found."
+    exit 1
+fi
+
+# Function: csgo <project_dir> <src_path>
+function csgo {
+    if [ -z "$1" ] || [ -z "$2" ]
+    then
+        echo "Internal error in function csgo."
+        return 1
+    fi
+
+    if [ ! -d $CS_BASE_PATH/$1/$(basename $2) ]
+    then
+        echo "Cs path not found: $CS_BASE_PATH/$1/$(basename $2)"
+        return 1
+    fi
+
+    if [ ! -d $SRC_BASE_PATH/$1/$(basename $2) ]
+    then
+        echo "Src path not found: $SRC_BASE_PATH/$1/$(basename $2)"
+        return 1
+    fi
+
+    cwdtmp=$(pwd)
+    cd $CS_BASE_PATH/$1/$(basename $2)/
+    echo "Start build cs date for $1->$(basename $2)..."
+    if [ $QUICK_FLAG -eq 0 ]
+    then
+        find $SRC_BASE_PATH/$1/$(basename $2) -name "*.[hc]"   >  $CS_BASE_PATH/$1/$(basename $2)/$CS_FILE_NAME \
+        && find $SRC_BASE_PATH/$1/$(basename $2) -name "*.def" >> $CS_BASE_PATH/$1/$(basename $2)/$CS_FILE_NAME \
+        && find $SRC_BASE_PATH/$1/$(basename $2) -name "*.js"  >> $CS_BASE_PATH/$1/$(basename $2)/$CS_FILE_NAME
+    fi
+
+    $CS_TOOL_NAME $CS_ARG $CS_BASE_PATH/$1/$(basename $2)/$CS_FILE_NAME
+    cd $cwdtmp
+}
+
+# Start from here.
+if [ $# -eq 0 ]
+then
+    echo "Use -h for help."
+    exit 0
+fi
+
+TMP_PATH=""
+PROJ_DIR=""
+while getopts :p:d:aqh opt
+do
+    case "$opt" in
+    p) PROJ_DIR=$(basename $OPTARG) ;;
+    d) TMP_PATH="$OPTARG" ;;
+    a)
+       if [ ! -z "$PROJ_DIR" ]
+       then
+           TMP_PATH="$SRC_BASE_PATH/$PROJ_DIR/*"
+       fi
+       ;;
+    q) QUICK_FLAG=1 ;;
+    h) echo -e "\r\nUsage: csupdate -p <project dir> [options] [file]"
+       echo -e "Options:"
+       echo -e "-p\tBuild cscope database for the project you give"
+       echo -e "-d\tBuild cscope database for the src you give"
+       echo -e "-a\tBuild cscope database for all src in the proj you give"
+       echo -e "-q\tQuick mode, use original database, not collect new-add files"
+       echo -e "-h\tShow this help message\r\n"
+       exit 0 ;;
+    *) echo "Unknow option: $opt, use -h for help."
+       exit 0 ;;
+    esac
+done
+
+if [ -z "$PROJ_DIR" ]
+then
+    echo "You must give the project directory."
+    exit 0
+fi
+
+if [ -z "$TMP_PATH" ]
+then
+    echo "No path found, use -h for help."
+    exit 0
+fi
+
+for elem in $TMP_PATH
+do
+    csgo $PROJ_DIR $elem
+done

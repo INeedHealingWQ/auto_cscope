@@ -64,4 +64,4 @@ endif
 此时若你已按照第一步运行完毕了csupdate_w脚本，则只要在linux-4.12.0目录下打开文件就便可以自动索引源码。
 
 # You can access this web for usage:
-http://whilewq/index.php/2020/05/25/auto-load-cscope-data-with-vim/
+http://47.114.88.128/index.php/2020/05/25/auto-load-cscope-data-with-vim/
